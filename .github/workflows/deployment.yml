@@ -46,8 +46,9 @@ jobs:
               -o IdentitiesOnly=yes \
               -o StrictHostKeyChecking=no \
               -o UserKnownHostsFile=/dev/null \
-              springBoot/target/GestionClinique-0.0.1-SNAPSHOT.jar \
+              springBoot/target/*.jar \
               root@${{ secrets.SERVER_HOST }}:/opt/ms-clinique-rabat/microservices/
+  
 
   run-project:
     runs-on: ubuntu-latest
