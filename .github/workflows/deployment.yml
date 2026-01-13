@@ -59,8 +59,9 @@ jobs:
               -o IdentitiesOnly=yes \
               -o StrictHostKeyChecking=no \
               -o UserKnownHostsFile=/dev/null \
-              target/*.jar \
+              springBoot/target/*.jar \
               root@${{ secrets.SERVER_HOST }}:/opt/ms-clinique-rabat/microservices/
+  
 
   run-project:
     name: Run application on server
