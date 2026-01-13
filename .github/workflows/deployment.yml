@@ -20,6 +20,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+
           script: |
             set -e
             mkdir -p /opt/ms-clinique-rabat/microservices
@@ -67,6 +68,8 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script_stop: true
           script: |
             set -e
 
@@ -81,3 +84,5 @@ jobs:
               --spring.datasource.url=${{ secrets.DATABASE_URL }} \
               --spring.sql.init.mode=true \
               > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
+            
+            exit 0
