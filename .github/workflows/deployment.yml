@@ -16,16 +16,17 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-      - name: Execute remote SSH commands
+      - name: Create remote folder
         run: |
-          ssh ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            set -e
-            mkdir -p /opt/ms-clinique-rabat/microservices
-          EOF
+          ssh -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              root@${{ secrets.SERVER_HOST }} \
+              "mkdir -p /opt/ms-clinique-rabat/microservices"
 
   build-project:
     name: Build Spring Boot application
@@ -49,9 +50,12 @@ jobs:
 
       - name: Copy JAR to server
         run: |
-          scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            springBoot/target/GestionClinique-0.0.1-SNAPSHOT.jar \
-            ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/opt/ms-clinique-rabat/microservices/
+          scp -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              springBoot/target/GestionClinique-0.0.1-SNAPSHOT.jar \
+              root@${{ secrets.SERVER_HOST }}:/opt/ms-clinique-rabat/microservices/
 
   run-project:
     name: Run application on server
@@ -60,23 +64,26 @@ jobs:
     steps:
       - name: Run application via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
-              set -e
+          ssh -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              root@${{ secrets.SERVER_HOST }} << 'EOF'
+                set -e
 
-              pkill -f GestionClinique-0.0.1-SNAPSHOT.jar || true
-              cd /opt/ms-clinique-rabat/microservices
+                pkill -f GestionClinique-0.0.1-SNAPSHOT.jar || true
+                cd /opt/ms-clinique-rabat/microservices
 
-              nohup java -jar GestionClinique-0.0.1-SNAPSHOT.jar \
-                --spring.mail.host=${MAIL_HOST} \
-                --spring.datasource.username=${DATABASE_USERNAME} \
-                --spring.datasource.password=${DATABASE_USERPASSWORD} \
-                --spring.datasource.url=${DATABASE_URL} \
-                --spring.sql.init.mode=true \
-                > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
+                nohup java -jar GestionClinique-0.0.1-SNAPSHOT.jar \
+                  --spring.mail.host=${MAIL_HOST} \
+                  --spring.datasource.username=${DATABASE_USERNAME} \
+                  --spring.datasource.password=${DATABASE_USERPASSWORD} \
+                  --spring.datasource.url=${DATABASE_URL} \
+                  --spring.sql.init.mode=true \
+                  > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
 
-              disown
-              exit 0
+                disown
+                exit 0
           EOF
         env:
           MAIL_HOST: ${{ secrets.MAIL_HOST }}
