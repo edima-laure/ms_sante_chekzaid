@@ -67,7 +67,8 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 5m
+          request_pty: false
+          command_timeout: 30s
           script_stop: true
           script: |
             set -e
@@ -83,3 +84,7 @@ jobs:
               --spring.datasource.url=${{ secrets.DATABASE_URL }} \
               --spring.sql.init.mode=true \
               > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
+
+            disown
+            exit 0
+  
