@@ -78,7 +78,10 @@ jobs:
 
                 pkill -f app.jar || true
 
-                mv *.jar app.jar
+                JAR_FILE=$(ls -1 *.jar | head -n 1)
+                echo "Using jar: $JAR_FILE"
+
+                mv "$JAR_FILE" app.jar
 
                 nohup java -jar app.jar \
                   --spring.mail.host=${MAIL_HOST} \
