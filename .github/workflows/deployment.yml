@@ -9,79 +9,68 @@ on:
   workflow_dispatch:
 
 jobs:
-  create-folder:
-    name: Create folder on server
+  deploy:
+    name: Build & Deploy Spring Boot (SSH Native)
     runs-on: ubuntu-latest
-    steps:
-      - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.PORT }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            mkdir -p /opt/ms-clinique-rabat/microservices
 
-  build-project:
-    name: Build Spring Boot application
-    runs-on: ubuntu-latest
-    needs: create-folder
     steps:
-      - name: Check out repository code
+      # 1️⃣ Checkout du code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Java
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
+      # 3️⃣ Build Spring Boot
       - name: Build Spring Boot project
         working-directory: springBoot
         run: |
           mvn clean package spring-boot:repackage -DskipTests
           ls -al target
 
+      # 4️⃣ Préparer SSH (clé + known_hosts)
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.PORT }} ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      # 5️⃣ Copier le JAR sur le serveur
       - name: Copy JAR to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.PORT }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: springBoot/target/GestionClinique-0.0.1-SNAPSHOT.jar
-          target: /opt/ms-clinique-rabat/microservices
-          overwrite: true
+        run: |
+          scp -P ${{ secrets.PORT }} \
+            springBoot/target/GestionClinique-0.0.1-SNAPSHOT.jar \
+            ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/opt/ms-clinique-rabat/microservices/
 
-  run-project:
-    name: Run application on server
-    runs-on: ubuntu-latest
-    needs: build-project
-    steps:
-      - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.PORT }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 5m
-          script_stop: true
-          script: |
-            set -e
+      # 6️⃣ Déployer et lancer l'application (SSH natif)
+      - name: Run application on server
+        run: |
+          ssh -p ${{ secrets.PORT }} \
+            ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
+              set -e
 
-            pkill -f GestionClinique-0.0.1-SNAPSHOT.jar || true
+              mkdir -p /opt/ms-clinique-rabat/microservices
+              cd /opt/ms-clinique-rabat/microservices
 
-            cd /opt/ms-clinique-rabat/microservices
+              pkill -f GestionClinique-0.0.1-SNAPSHOT.jar || true
 
-            nohup java -jar GestionClinique-0.0.1-SNAPSHOT.jar \
-              --spring.mail.host=${{ secrets.MAIL_HOST }} \
-              --spring.datasource.username=${{ secrets.DATABASE_USERNAME }} \
-              --spring.datasource.password=${{ secrets.DATABASE_USERPASSWORD }} \
-              --spring.datasource.url=${{ secrets.DATABASE_URL }} \
-              --spring.sql.init.mode=true \
-              > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
+              nohup java -jar GestionClinique-0.0.1-SNAPSHOT.jar \
+                --spring.mail.host=${MAIL_HOST} \
+                --spring.datasource.username=${DATABASE_USERNAME} \
+                --spring.datasource.password=${DATABASE_USERPASSWORD} \
+                --spring.datasource.url=${DATABASE_URL} \
+                --spring.sql.init.mode=true \
+                > /var/log/ms-clinique-rabat.log 2>&1 < /dev/null &
 
-            exit 0
+              exit 0
+          EOF
+        env:
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_USERPASSWORD: ${{ secrets.DATABASE_USERPASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
