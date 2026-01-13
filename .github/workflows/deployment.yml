@@ -65,7 +65,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-      - name: Run application via SSH (stable)
+      - name: Run application via SSH
         run: |
           ssh -i ~/.ssh/id_ed25519 \
               -o IdentitiesOnly=yes \
@@ -74,10 +74,13 @@ jobs:
               ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
                 set -e
 
-                pkill -f GestionClinique-0.0.1-SNAPSHOT.jar || true
-                cd /opt/ms-clinique-rabat/microservices
+                cd /opt/ms-clinique-rabat/microservices/springBoot/target
 
-                nohup java -jar GestionClinique-0.0.1-SNAPSHOT.jar \
+                pkill -f app.jar || true
+
+                mv *.jar app.jar
+
+                nohup java -jar app.jar \
                   --spring.mail.host=${MAIL_HOST} \
                   --spring.datasource.username=${DATABASE_USERNAME} \
                   --spring.datasource.password=${DATABASE_USERPASSWORD} \
