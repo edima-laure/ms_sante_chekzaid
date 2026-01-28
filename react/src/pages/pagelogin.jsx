@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import axiosInstance from '../composants/config/axiosConfig'
 import { API_BASE } from '../composants/config/apiconfig';
 import { useNavigate } from 'react-router-dom';
-import imageclinique from '../assets/img_clinique.jpg'
-import logoclinique from '../assets/logo.png'
-import icon from '../assets/Icon.png'
+import magniloquence from "../assets/img_clinique.jpg";
+import logoclinique from "../assets/logo.png";
+import icon from "../assets/Icon.png";
+
 
 function PageLogin() {
   let navigate = useNavigate()
@@ -210,7 +211,8 @@ function PageLogin() {
     <>
       <div className='accueil'>
         <div className='image-container'>
-          <img src={imageclinique} className='img_cli_acc' alt="Clinique" />
+          <img src={magniloquence} className='img_cli_acc' alt="Clinique" />
+
         </div>
         <form className='formulaire' onSubmit={handleSubmit}>
           <img src={logoclinique} alt="Logo" />
@@ -366,7 +368,7 @@ function PageLogin() {
             <div className="popup-body">
               <p>{popupMessage}</p>
               <div className="admin-contact">
-                <p><strong>Téléphone :</strong> +237 677 850 000</p>
+                <p><strong>Téléphone :</strong> +212 0665827268</p>
                 <p><strong>Email :</strong> admin@gmail.com</p>
                 <p><strong>Horaires :</strong> Lundi - Dimanche, 8h - 18h</p>
               </div>

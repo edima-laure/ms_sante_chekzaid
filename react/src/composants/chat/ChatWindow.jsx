@@ -17,12 +17,12 @@ let useNotificationFallback = () => ({
 });
 
 // Essayer d'importer le hook de notification, sinon utiliser le fallback
-try {
-  const { useNotification } = require('../notification');
-  useNotificationFallback = useNotification;
-} catch (error) {
-  console.warn('Impossible de charger le système de notification, utilisation du fallback:', error);
-}
+//try {
+ // const { useNotification } = require('../notification');
+  //useNotificationFallback = useNotification;
+//} catch (error) {
+  //console.warn('Impossible de charger le système de notification, utilisation du fallback:', error);
+//}
 
 const useNotification = useNotificationFallback;
 
