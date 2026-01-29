@@ -31,5 +31,6 @@ jobs:
 
       - name: Build project
         run: |
+          cd springBoot
           mvn clean package spring-boot:repackage -DskipTests
           ls -al target
