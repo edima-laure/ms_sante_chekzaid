@@ -6,9 +6,43 @@ on:
   push:
   workflow_dispatch:
 
+name: deploy application
+
+run-name: ${{ github.actor }} is deploying project
+
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
+  build-project:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Setup Java version
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Verify POM exists
+        run: |
+          cd springBoot
+          if [ ! -f pom.xml ]; then
+            echo "ERROR: pom.xml missing in springBoot"
+            exit 1
+          fi
+
+      - name: Build project
+        run: |
+          cd springBoot
+          mvn clean package spring-boot:repackage -DskipTests
+          ls -al target
+
   create-folder:
-    name: Create folder on server
+    needs: build-project   # <-- attend que build-project soit terminé
     runs-on: ubuntu-latest
     steps:
       - name: Execute remote SSH commands
@@ -20,23 +54,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             mkdir -p /opt/ms-clinique-rabat/microservices
-
-  build-project:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Setup java version
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Build project
-        run: |
-          cd springBoot
-          mvn clean package spring-boot:repackage -DskipTests
-          ls -al target
+            ls -al /opt/ms-clinique-rabat
 
   
